@@ -38,22 +38,24 @@ export function ActiveRecallTopicModal({
     onClose();
   };
 
+  const lesson = prompt.lesson;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
       <div 
-        className="bg-gray-900 border border-gray-700 w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden"
+        className="bg-gray-900 border border-gray-700 w-full max-w-3xl rounded-2xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="p-5 border-b border-gray-800 bg-gray-950/60 flex items-start justify-between gap-4">
+        <div className="p-5 border-b border-gray-800 bg-gray-950/70 flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-900 text-indigo-300 border border-indigo-700">
-                Active Recall Protocol
+                Cognitive Mastery Engine
               </span>
               <span className="text-xs text-gray-400">Module {prompt.module}</span>
             </div>
-            <h2 className="text-lg font-bold text-white leading-snug">
+            <h2 className="text-xl font-bold text-white leading-snug">
               {prompt.topicTitle}
             </h2>
           </div>
@@ -65,8 +67,8 @@ export function ActiveRecallTopicModal({
           </button>
         </div>
 
-        {/* Cognitive Method Selector: Step 1 (Teach) -> Step 2 (Active Recall) */}
-        <div className="flex border-b border-gray-800 bg-gray-950/40 text-xs font-semibold overflow-x-auto">
+        {/* Cognitive Flow Tab Selector */}
+        <div className="flex border-b border-gray-800 bg-gray-950/50 text-xs font-semibold overflow-x-auto">
           <button
             onClick={() => setActiveTab('lesson')}
             className={cn(
@@ -76,7 +78,7 @@ export function ActiveRecallTopicModal({
                 : 'border-transparent text-gray-400 hover:text-gray-200'
             )}
           >
-            <span>📖 1. Teach Me Concept</span>
+            <span>📖 1. Teach Me Concept (Intuition &amp; Example)</span>
           </button>
           <button
             onClick={() => setActiveTab('interrogate')}
@@ -114,69 +116,102 @@ export function ActiveRecallTopicModal({
         </div>
 
         {/* Modal Scrollable Body */}
-        <div className="p-6 overflow-y-auto space-y-5 flex-1">
-          {/* STEP 1: Teach Concept Breakdown */}
+        <div className="p-6 overflow-y-auto space-y-6 flex-1">
+          {/* STEP 1: DEEP TEACHING CONCEPT BREAKDOWN */}
           {activeTab === 'lesson' && (
-            <div className="space-y-4 animate-fade-in">
-              <div className="p-4 bg-blue-950/30 border border-blue-800/60 rounded-xl space-y-1.5">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-blue-400">
-                  Concept Overview &amp; Mechanics
+            <div className="space-y-5 animate-fade-in">
+              {/* 1. Intuitive Explanation */}
+              <div className="p-4.5 bg-blue-950/30 border border-blue-800/60 rounded-2xl space-y-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
+                  <span>💡</span> Intuitive Explanation (Why It Works Physically)
                 </span>
-                <p className="text-gray-200 text-sm leading-relaxed">
-                  {prompt.modelAnswer}
+                <p className="text-gray-100 text-sm leading-relaxed whitespace-pre-line">
+                  {lesson?.intuitiveExplanation ?? prompt.modelAnswer}
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="p-3.5 bg-gray-950 border border-gray-800 rounded-xl space-y-1">
-                  <span className="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
-                    <span>⚡</span> Key Rule / Decision Condition
+              {/* 2. Visual / Slide ASCII Diagram */}
+              {lesson?.diagramOrVisual && (
+                <div className="p-4 bg-gray-950 border border-gray-800 rounded-2xl space-y-1.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400 block">
+                    📊 Visual Diagram &amp; Geometry
                   </span>
-                  <p className="text-xs text-gray-300 leading-relaxed">
-                    {prompt.lesson?.coreRule ?? 'Verify all underlying distribution assumptions before applying formulas.'}
-                  </p>
-                </div>
-
-                <div className="p-3.5 bg-gray-950 border border-gray-800 rounded-xl space-y-1">
-                  <span className="text-xs font-bold text-rose-400 flex items-center gap-1.5">
-                    <span>⚠️</span> Fatal Exam Trap
-                  </span>
-                  <p className="text-xs text-gray-300 leading-relaxed">
-                    {prompt.lesson?.examPitfall ?? 'Double-check degrees of freedom and alternative hypothesis direction.'}
-                  </p>
-                </div>
-              </div>
-
-              {prompt.modelAnswerLatex && (
-                <div className="p-3 bg-gray-950 border border-gray-800 rounded-xl text-center overflow-x-auto">
-                  <KatexRenderer latex={prompt.modelAnswerLatex} display={true} />
+                  <pre className="font-mono text-xs text-indigo-300 overflow-x-auto leading-snug">
+                    {lesson.diagramOrVisual}
+                  </pre>
                 </div>
               )}
 
-              {/* Key Concept Pills */}
-              <div>
-                <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block mb-2">
-                  Essential Takeaways to Retain:
+              {/* 3. Core Mathematical Rule & Formula */}
+              <div className="p-4 bg-gray-950 border border-gray-800 rounded-2xl space-y-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                  <span>⚡</span> Core Decision Rule &amp; Mathematical Definition
                 </span>
-                <div className="flex flex-wrap gap-2">
-                  {prompt.keyConcepts.map((c, i) => (
-                    <span
-                      key={i}
-                      className="text-xs px-2.5 py-1 rounded-md bg-blue-950/60 text-blue-300 border border-blue-800/60 font-medium"
-                    >
-                      • {c}
-                    </span>
-                  ))}
-                </div>
+                <p className="text-xs text-gray-200 leading-relaxed whitespace-pre-line font-medium">
+                  {lesson?.coreRule ?? 'Verify all underlying distribution assumptions before applying formulas.'}
+                </p>
+
+                {(lesson?.latexFormula || prompt.modelAnswerLatex) && (
+                  <div className="py-2.5 px-4 bg-gray-900 border border-gray-800 rounded-xl text-center overflow-x-auto">
+                    <KatexRenderer 
+                      latex={lesson?.latexFormula || prompt.modelAnswerLatex || ''} 
+                      display={true} 
+                    />
+                  </div>
+                )}
               </div>
 
+              {/* 4. Complete Worked Problem Example with Numbers */}
+              {lesson?.workedExample && (
+                <div className="p-5 bg-gradient-to-b from-gray-900 to-gray-950 border border-emerald-900/50 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                      <span>🧪</span> Step-by-Step Worked Exam Example
+                    </span>
+                    <span className="text-[10px] text-gray-500 font-mono">Actual Lindberg Exam Pattern</span>
+                  </div>
+
+                  <p className="text-xs text-gray-300 font-medium italic">
+                    {lesson.workedExample.context}
+                  </p>
+
+                  <div className="space-y-1.5 pl-2 border-l-2 border-emerald-600/60 my-2">
+                    {lesson.workedExample.stepByStep.map((step, idx) => (
+                      <p key={idx} className="text-xs text-gray-200 leading-relaxed font-mono">
+                        {step}
+                      </p>
+                    ))}
+                  </div>
+
+                  <div className="p-3 bg-emerald-950/40 border border-emerald-800/40 rounded-xl text-xs text-emerald-200 font-semibold flex items-center justify-between flex-wrap gap-2">
+                    <span>Final Answer: {lesson.workedExample.result}</span>
+                    {lesson.workedExample.resultLatex && (
+                      <span className="text-right">
+                        <KatexRenderer latex={lesson.workedExample.resultLatex} display={false} />
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* 5. Fatal Exam Trap Warning */}
+              <div className="p-4 bg-amber-950/30 border border-amber-800/60 rounded-2xl space-y-1.5">
+                <span className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                  <span>⚠️</span> The Fatal Exam Trap to Avoid
+                </span>
+                <p className="text-xs text-amber-200 leading-relaxed">
+                  {lesson?.examPitfall ?? 'Watch out for boundary conditions, degrees of freedom calculation, and pooled vs unpooled conditions.'}
+                </p>
+              </div>
+
+              {/* 6. Action Button: Move from Teach -> Active Recall */}
               <div className="pt-2">
                 <button
                   type="button"
                   onClick={() => setActiveTab('interrogate')}
-                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-colors shadow-md flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2"
                 >
-                  <span>Understood! Proceed to Active Recall Drill →</span>
+                  <span>🧠 Concept Understood! Now Test My Active Recall →</span>
                 </button>
               </div>
             </div>
@@ -196,7 +231,7 @@ export function ActiveRecallTopicModal({
 
               <div>
                 <label className="block text-xs font-semibold text-gray-400 mb-1.5">
-                  Force your brain to recall without looking (Type your reasoning below):
+                  Force your brain to recall without looking back at the lesson (Type your reasoning below):
                 </label>
                 <textarea
                   value={userText}
@@ -236,7 +271,7 @@ export function ActiveRecallTopicModal({
             </div>
           )}
 
-          {/* STEP 4: Rapid Self-Check */}
+          {/* STEP 4: Rapid Diagnostic */}
           {activeTab === 'selfcheck' && (
             <div className="space-y-4 animate-fade-in">
               <div className="p-4 bg-amber-950/30 border border-amber-800/60 rounded-xl space-y-1">
