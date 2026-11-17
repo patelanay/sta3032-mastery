@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import Navbar from '@/components/layout/Navbar';
+import { FormulaSheetModal } from '@/components/ui/FormulaSheetModal';
 
 export const metadata: Metadata = {
   title: 'STA3032 Mastery Studio | Final Exam Dec 8, 2026',
@@ -19,6 +20,7 @@ export default function RootLayout({
         <main className="flex-1 flex flex-col">
           {children}
         </main>
+        <FormulaSheetModal />
       </body>
     </html>
   );
