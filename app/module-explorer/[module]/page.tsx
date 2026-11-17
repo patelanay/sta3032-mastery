@@ -18,6 +18,7 @@ import { activeRecallPrompts } from '@/data/activeRecallPrompts';
 import { ActiveRecallTopicCard } from '@/components/modules/ActiveRecallTopicCard';
 import { ActiveRecallFormulaCard } from '@/components/modules/ActiveRecallFormulaCard';
 import { ActiveRecallLearningBanner } from '@/components/modules/ActiveRecallLearningBanner';
+import { ModuleActiveRecallCheckpoint } from '@/components/modules/ModuleActiveRecallCheckpoint';
 import type { FormulaItem, ScenarioCard, WalkthroughProblem, ClozeExercise, DerivationProof } from '@/types';
 
 // Practice Exam milestone mapping per module progression
@@ -368,7 +369,10 @@ export default function ModuleDetailPage() {
         </div>
       </section>
 
-      {/* STEP 4: Timed Exam Simulator Milestone Checkpoint */}
+      {/* STEP 4: End-of-Module Active Recall Checkpoint Gate */}
+      <ModuleActiveRecallCheckpoint moduleNum={moduleNum} />
+
+      {/* STEP 5: Timed Exam Simulator Milestone Checkpoint */}
       {examMilestone && (
         <section className="bg-gradient-to-r from-indigo-950/80 via-purple-950/50 to-indigo-950/80 border-2 border-indigo-500/80 rounded-2xl p-6 shadow-2xl space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-2">

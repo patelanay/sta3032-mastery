@@ -59,8 +59,8 @@ export function ActiveRecallTopicCard({
                   : 'bg-indigo-950/70 hover:bg-indigo-900 border-indigo-700/80 text-indigo-300 hover:shadow-indigo-500/10'
               )}
             >
-              <span>🧠</span>
-              <span>Active Retrieval Drill</span>
+              <span>📖</span>
+              <span>Teach Concept &amp; Active Recall</span>
             </button>
           ) : (
             <span className="text-[11px] text-gray-600 italic">Self-check topic</span>

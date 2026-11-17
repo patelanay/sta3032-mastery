@@ -13,7 +13,7 @@ interface ActiveRecallTopicModalProps {
   alreadyDone: boolean;
 }
 
-type TabMode = 'interrogate' | 'feynman' | 'selfcheck';
+type TabMode = 'lesson' | 'interrogate' | 'feynman' | 'selfcheck';
 
 export function ActiveRecallTopicModal({
   prompt,
@@ -22,7 +22,7 @@ export function ActiveRecallTopicModal({
   onMastered,
   alreadyDone,
 }: ActiveRecallTopicModalProps) {
-  const [activeTab, setActiveTab] = useState<TabMode>('interrogate');
+  const [activeTab, setActiveTab] = useState<TabMode>('lesson');
   const [userText, setUserText] = useState('');
   const [revealed, setRevealed] = useState(false);
   const [checkedQuestions, setCheckedQuestions] = useState<Record<number, boolean>>({});
@@ -41,7 +41,7 @@ export function ActiveRecallTopicModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
       <div 
-        className="bg-gray-900 border border-gray-700 w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden"
+        className="bg-gray-900 border border-gray-700 w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
@@ -65,48 +65,126 @@ export function ActiveRecallTopicModal({
           </button>
         </div>
 
-        {/* Cognitive Method Selector */}
-        <div className="flex border-b border-gray-800 bg-gray-950/40 text-xs font-semibold">
+        {/* Cognitive Method Selector: Step 1 (Teach) -> Step 2 (Active Recall) */}
+        <div className="flex border-b border-gray-800 bg-gray-950/40 text-xs font-semibold overflow-x-auto">
+          <button
+            onClick={() => setActiveTab('lesson')}
+            className={cn(
+              'flex-1 py-3 px-4 border-b-2 transition-all flex items-center justify-center gap-2 whitespace-nowrap',
+              activeTab === 'lesson'
+                ? 'border-blue-500 text-blue-300 bg-blue-950/20'
+                : 'border-transparent text-gray-400 hover:text-gray-200'
+            )}
+          >
+            <span>📖 1. Teach Me Concept</span>
+          </button>
           <button
             onClick={() => setActiveTab('interrogate')}
             className={cn(
-              'flex-1 py-3 px-4 border-b-2 transition-all flex items-center justify-center gap-2',
+              'flex-1 py-3 px-4 border-b-2 transition-all flex items-center justify-center gap-2 whitespace-nowrap',
               activeTab === 'interrogate'
                 ? 'border-indigo-500 text-indigo-300 bg-indigo-950/20'
                 : 'border-transparent text-gray-400 hover:text-gray-200'
             )}
           >
-            <span>🧠 Elaborative Interrogation</span>
+            <span>🧠 2. Interrogation</span>
           </button>
           <button
             onClick={() => setActiveTab('feynman')}
             className={cn(
-              'flex-1 py-3 px-4 border-b-2 transition-all flex items-center justify-center gap-2',
+              'flex-1 py-3 px-4 border-b-2 transition-all flex items-center justify-center gap-2 whitespace-nowrap',
               activeTab === 'feynman'
                 ? 'border-emerald-500 text-emerald-300 bg-emerald-950/20'
                 : 'border-transparent text-gray-400 hover:text-gray-200'
             )}
           >
-            <span>🗣️ Feynman Explanation</span>
+            <span>🗣️ 3. Feynman</span>
           </button>
           <button
             onClick={() => setActiveTab('selfcheck')}
             className={cn(
-              'flex-1 py-3 px-4 border-b-2 transition-all flex items-center justify-center gap-2',
+              'flex-1 py-3 px-4 border-b-2 transition-all flex items-center justify-center gap-2 whitespace-nowrap',
               activeTab === 'selfcheck'
                 ? 'border-amber-500 text-amber-300 bg-amber-950/20'
                 : 'border-transparent text-gray-400 hover:text-gray-200'
             )}
           >
-            <span>🎯 Rapid Self-Check</span>
+            <span>🎯 4. Diagnostic</span>
           </button>
         </div>
 
         {/* Modal Scrollable Body */}
         <div className="p-6 overflow-y-auto space-y-5 flex-1">
-          {/* Method 1: Elaborative Interrogation */}
+          {/* STEP 1: Teach Concept Breakdown */}
+          {activeTab === 'lesson' && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="p-4 bg-blue-950/30 border border-blue-800/60 rounded-xl space-y-1.5">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-blue-400">
+                  Concept Overview &amp; Mechanics
+                </span>
+                <p className="text-gray-200 text-sm leading-relaxed">
+                  {prompt.modelAnswer}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="p-3.5 bg-gray-950 border border-gray-800 rounded-xl space-y-1">
+                  <span className="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
+                    <span>⚡</span> Key Rule / Decision Condition
+                  </span>
+                  <p className="text-xs text-gray-300 leading-relaxed">
+                    {prompt.lesson?.coreRule ?? 'Verify all underlying distribution assumptions before applying formulas.'}
+                  </p>
+                </div>
+
+                <div className="p-3.5 bg-gray-950 border border-gray-800 rounded-xl space-y-1">
+                  <span className="text-xs font-bold text-rose-400 flex items-center gap-1.5">
+                    <span>⚠️</span> Fatal Exam Trap
+                  </span>
+                  <p className="text-xs text-gray-300 leading-relaxed">
+                    {prompt.lesson?.examPitfall ?? 'Double-check degrees of freedom and alternative hypothesis direction.'}
+                  </p>
+                </div>
+              </div>
+
+              {prompt.modelAnswerLatex && (
+                <div className="p-3 bg-gray-950 border border-gray-800 rounded-xl text-center overflow-x-auto">
+                  <KatexRenderer latex={prompt.modelAnswerLatex} display={true} />
+                </div>
+              )}
+
+              {/* Key Concept Pills */}
+              <div>
+                <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block mb-2">
+                  Essential Takeaways to Retain:
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {prompt.keyConcepts.map((c, i) => (
+                    <span
+                      key={i}
+                      className="text-xs px-2.5 py-1 rounded-md bg-blue-950/60 text-blue-300 border border-blue-800/60 font-medium"
+                    >
+                      • {c}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('interrogate')}
+                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-colors shadow-md flex items-center justify-center gap-2"
+                >
+                  <span>Understood! Proceed to Active Recall Drill →</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 2: Elaborative Interrogation */}
           {activeTab === 'interrogate' && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-fade-in">
               <div className="p-4 bg-indigo-950/30 border border-indigo-800/60 rounded-xl space-y-1">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-400">
                   Cognitive Prompt: Ask &quot;Why / Under What Conditions?&quot;
@@ -131,9 +209,9 @@ export function ActiveRecallTopicModal({
             </div>
           )}
 
-          {/* Method 2: Feynman Explanation */}
+          {/* STEP 3: Feynman Explanation */}
           {activeTab === 'feynman' && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-fade-in">
               <div className="p-4 bg-emerald-950/30 border border-emerald-800/60 rounded-xl space-y-1">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
                   Feynman Technique: Teach it Simply
@@ -158,9 +236,9 @@ export function ActiveRecallTopicModal({
             </div>
           )}
 
-          {/* Method 3: Rapid Self-Check */}
+          {/* STEP 4: Rapid Self-Check */}
           {activeTab === 'selfcheck' && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-fade-in">
               <div className="p-4 bg-amber-950/30 border border-amber-800/60 rounded-xl space-y-1">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400">
                   Rapid Retrieval Diagnostic
@@ -191,59 +269,55 @@ export function ActiveRecallTopicModal({
             </div>
           )}
 
-          {/* Reveal & Model Answer Accordion */}
-          <div className="pt-2">
-            {!revealed ? (
-              <button
-                type="button"
-                onClick={() => setRevealed(true)}
-                className="w-full py-2.5 px-4 bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold rounded-xl border border-gray-700 transition-all flex items-center justify-center gap-2"
-              >
-                <span>🔍 Reveal Model Retrieval &amp; Key Mechanisms</span>
-              </button>
-            ) : (
-              <div className="space-y-4 p-4.5 rounded-xl bg-gray-950 border border-gray-800 animate-fade-in">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest">
-                    ✓ Model Expert Answer
-                  </span>
-                  <button
-                    onClick={() => setRevealed(false)}
-                    className="text-[11px] text-gray-500 hover:text-gray-400 underline"
-                  >
-                    Hide
-                  </button>
-                </div>
-
-                <p className="text-sm text-gray-200 leading-relaxed">
-                  {prompt.modelAnswer}
-                </p>
-
-                {prompt.modelAnswerLatex && (
-                  <div className="py-2 text-center overflow-x-auto">
-                    <KatexRenderer latex={prompt.modelAnswerLatex} display={true} />
+          {/* Reveal & Model Answer Accordion for Retrieval Tabs */}
+          {activeTab !== 'lesson' && (
+            <div className="pt-2">
+              {!revealed ? (
+                <button
+                  type="button"
+                  onClick={() => setRevealed(true)}
+                  className="w-full py-2.5 px-4 bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold rounded-xl border border-gray-700 transition-all flex items-center justify-center gap-2"
+                >
+                  <span>🔍 Verify My Retrieval Against Expert Answer</span>
+                </button>
+              ) : (
+                <div className="space-y-4 p-4.5 rounded-xl bg-gray-950 border border-gray-800 animate-fade-in">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest">
+                      ✓ Model Expert Answer
+                    </span>
+                    <button
+                      onClick={() => setRevealed(false)}
+                      className="text-[11px] text-gray-500 hover:text-gray-400 underline"
+                    >
+                      Hide
+                    </button>
                   </div>
-                )}
 
-                {/* Key Concepts Rubric */}
-                <div className="border-t border-gray-800 pt-3">
-                  <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block mb-2">
-                    Key Concepts You Should Have Retrieved:
-                  </span>
-                  <div className="flex flex-wrap gap-2">
-                    {prompt.keyConcepts.map((concept, i) => (
-                      <span
-                        key={i}
-                        className="text-xs px-2.5 py-1 rounded-md bg-indigo-950/60 text-indigo-300 border border-indigo-800/60 font-medium"
-                      >
-                        ✓ {concept}
-                      </span>
-                    ))}
+                  <p className="text-sm text-gray-200 leading-relaxed">
+                    {prompt.modelAnswer}
+                  </p>
+
+                  {/* Key Concepts Rubric */}
+                  <div className="border-t border-gray-800 pt-3">
+                    <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block mb-2">
+                      Key Concepts You Should Have Retrieved:
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {prompt.keyConcepts.map((concept, i) => (
+                        <span
+                          key={i}
+                          className="text-xs px-2.5 py-1 rounded-md bg-indigo-950/60 text-indigo-300 border border-indigo-800/60 font-medium"
+                        >
+                          ✓ {concept}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Modal Footer */}
