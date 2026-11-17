@@ -14,6 +14,10 @@ import { KatexRenderer } from '@/components/ui/KatexRenderer';
 import { FlagButton } from '@/components/ui/FlagButton';
 import { FormulaSheetBadge, ModuleBadge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
+import { activeRecallPrompts } from '@/data/activeRecallPrompts';
+import { ActiveRecallTopicCard } from '@/components/modules/ActiveRecallTopicCard';
+import { ActiveRecallFormulaCard } from '@/components/modules/ActiveRecallFormulaCard';
+import { ActiveRecallLearningBanner } from '@/components/modules/ActiveRecallLearningBanner';
 import type { FormulaItem, ScenarioCard, WalkthroughProblem, ClozeExercise, DerivationProof } from '@/types';
 
 // Practice Exam milestone mapping per module progression
@@ -165,39 +169,38 @@ export default function ModuleDetailPage() {
         </p>
       </div>
 
+      {/* Active Recall Protocol Scientific Banner */}
+      <ActiveRecallLearningBanner />
+
       {/* STEP 1: Study & Master Concepts Checklist */}
       <section className="space-y-4">
         <div className="flex items-center justify-between border-b border-gray-800 pb-2">
           <div>
             <span className="text-xs font-bold uppercase tracking-widest text-indigo-400">Step 1</span>
-            <h2 className="text-xl font-bold text-white">Lecture Topics Checklist</h2>
+            <h2 className="text-xl font-bold text-white">Lecture Topics Checklist &amp; Active Retrieval</h2>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Click <span className="text-indigo-400 font-semibold">&quot;Active Retrieval Drill&quot;</span> on any topic to test your knowledge with Elaborative Interrogation and Feynman simplifications.
+            </p>
           </div>
-          <span className="text-xs text-gray-400">
+          <span className="text-xs text-gray-400 font-mono">
             {checkedTopics.size} / {mod.topics?.length ?? 0} mastered
           </span>
         </div>
-        <div className="rounded-xl border border-gray-800 bg-gray-900 divide-y divide-gray-800 shadow-sm">
+        <div className="rounded-xl border border-gray-800 bg-gray-900 divide-y divide-gray-800 shadow-sm overflow-hidden">
           {(mod.topics ?? []).map((topic, i) => {
             const done = checkedTopics.has(topic);
+            const prompt = (activeRecallPrompts[moduleNum] ?? []).find(
+              (p) => p.topicIndex === i || p.topicTitle.toLowerCase() === topic.toLowerCase()
+            );
             return (
-              <label
+              <ActiveRecallTopicCard
                 key={i}
-                className={cn(
-                  'flex items-center gap-3 px-5 py-3.5 cursor-pointer transition-colors',
-                  done ? 'bg-emerald-950/30' : 'hover:bg-gray-800/60',
-                )}
-              >
-                <input
-                  type="checkbox"
-                  checked={done}
-                  onChange={() => toggleTopic(topic)}
-                  className="w-4 h-4 accent-emerald-500 rounded"
-                />
-                <span className={cn('text-sm', done ? 'line-through text-gray-500' : 'text-gray-200')}>
-                  {topic}
-                </span>
-                {done && <span className="ml-auto text-emerald-400 text-xs font-medium">✓ Done</span>}
-              </label>
+                topic={topic}
+                index={i}
+                isDone={done}
+                onToggle={() => toggleTopic(topic)}
+                prompt={prompt}
+              />
             );
           })}
         </div>
@@ -207,9 +210,9 @@ export default function ModuleDetailPage() {
       <section className="space-y-4">
         <div className="border-b border-gray-800 pb-2">
           <span className="text-xs font-bold uppercase tracking-widest text-indigo-400">Step 2</span>
-          <h2 className="text-xl font-bold text-white">Decision Rules & Formula Application Guides</h2>
+          <h2 className="text-xl font-bold text-white">Decision Rules &amp; Active Formula Retrieval</h2>
           <p className="text-gray-400 text-xs mt-1">
-            Formulas are on your sheet — these cards train you on <span className="text-amber-400 font-semibold">WHEN to apply</span> them and traps to avoid.
+            Formulas are provided on your printed sheet — these cards train you on <span className="text-amber-400 font-semibold">WHEN to apply</span> them and force you to retrieve conditions before revealing answers.
           </p>
         </div>
 
@@ -220,7 +223,7 @@ export default function ModuleDetailPage() {
         ) : (
           <div className="space-y-4">
             {moduleFormulas.map((formula) => (
-              <FormulaCard key={formula.id} formula={formula} />
+              <ActiveRecallFormulaCard key={formula.id} formula={formula} />
             ))}
           </div>
         )}
@@ -392,96 +395,5 @@ export default function ModuleDetailPage() {
         </section>
       )}
     </main>
-  );
-}
-
-function FormulaCard({ formula }: { formula: FormulaItem }) {
-  const [expanded, setExpanded] = useState(false);
-
-  return (
-    <div className="rounded-2xl border border-gray-800 bg-gray-900 overflow-hidden shadow-sm">
-      {/* Title bar */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-gray-900/60">
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-base font-bold text-white">{formula.title}</span>
-          <FormulaSheetBadge onExam3Sheet={formula.onExam3Sheet} />
-        </div>
-        <div className="flex items-center gap-2">
-          <FlagButton
-            itemId={formula.id}
-            title={formula.title}
-            content={formula.whenToUse}
-            side={formula.module >= 5 ? 'B' : 'A'}
-            priority="must-have"
-          />
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="text-xs text-indigo-400 hover:underline"
-          >
-            {expanded ? 'Collapse ↑' : 'Expand ↓'}
-          </button>
-        </div>
-      </div>
-
-      <div className="p-4 space-y-4">
-        {/* WHEN TO USE — primary, prominent */}
-        <div className="rounded-xl bg-indigo-950/60 border border-indigo-700/60 p-3.5">
-          <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-1.5">
-            🎯 When To Use
-          </p>
-          <p className="text-gray-100 text-sm leading-relaxed">{formula.whenToUse}</p>
-        </div>
-
-        {/* Conditions */}
-        {formula.conditions && formula.conditions.length > 0 && (
-          <div>
-            <p className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-1.5">
-              ✓ Conditions / Assumptions
-            </p>
-            <ul className="space-y-1">
-              {formula.conditions.map((cond, i) => (
-                <li key={i} className="flex items-start gap-2 text-xs text-gray-200">
-                  <span className="text-emerald-400 mt-0.5 flex-shrink-0">✓</span>
-                  {cond}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* vs Alternative */}
-        {formula.vsAlternative && (
-          <div className="rounded-lg bg-blue-950/40 border border-blue-800/60 px-3.5 py-2.5">
-            <p className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-1">
-              ↔ vs Alternative
-            </p>
-            <p className="text-xs text-blue-200">{formula.vsAlternative}</p>
-          </div>
-        )}
-
-        {/* Common Trap */}
-        <div className="rounded-lg bg-amber-950/40 border border-amber-700/60 px-3.5 py-2.5">
-          <p className="text-xs font-bold text-amber-400 uppercase tracking-widest mb-1">
-            ⚠️ Common Trap
-          </p>
-          <p className="text-xs text-amber-200">{formula.commonTrap}</p>
-        </div>
-
-        {/* Collapsible formula */}
-        <div>
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="text-xs text-gray-500 hover:text-gray-300 underline"
-          >
-            {expanded ? '▲ Hide formula' : '▼ Show formula (already on your sheet)'}
-          </button>
-          {expanded && (
-            <div className="mt-2.5 rounded-lg bg-gray-950 border border-gray-800 p-3 overflow-x-auto text-center">
-              <KatexRenderer latex={formula.latex} display={true} />
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
   );
 }
