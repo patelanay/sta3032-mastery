@@ -91,15 +91,37 @@ function WarmupTab() {
   useEffect(() => {
     const s = getAppState();
     setState(s);
-    setItems(buildWarmupItems(s));
-
-    // Check if user already finished warmup today (since last midnight)
     const todayStr = getTodayDateString();
-    if (s.lastWarmupDate) {
-      const lastDate = s.lastWarmupDate.split('T')[0];
-      if (lastDate === todayStr) {
-        setDoneToday(true);
-      }
+
+    // Check if user already finished warmup today
+    const wasCompletedToday =
+      (s.warmupState?.date === todayStr && s.warmupState?.completed) ||
+      (s.lastWarmupDate && s.lastWarmupDate.split('T')[0] === todayStr);
+
+    if (wasCompletedToday) {
+      setDoneToday(true);
+      return;
+    }
+
+    // Load or initialize today's warmup queue and persistent progress index
+    const builtItems = buildWarmupItems(s);
+    setItems(builtItems);
+
+    if (s.warmupState && s.warmupState.date === todayStr) {
+      // Resume from previously saved item index
+      const savedIndex = Math.min(s.warmupState.currentIndex || 0, Math.max(0, builtItems.length - 1));
+      setIndex(savedIndex);
+    } else {
+      // Initialize fresh warmup session for today
+      const newWarmupState = {
+        date: todayStr,
+        currentIndex: 0,
+        completed: false,
+        itemIds: builtItems.map(it => it.kind === 'flashcard' ? it.card.id : it.entry.itemId),
+      };
+      const updatedState = { ...s, warmupState: newWarmupState };
+      saveAppState(updatedState);
+      setState(updatedState);
     }
   }, []);
 
@@ -119,16 +141,36 @@ function WarmupTab() {
   const remSec = remaining % 60;
 
   function advance() {
+    const appState = getAppState();
+    const todayStr = getTodayDateString();
+
     if (index + 1 >= items.length) {
-      const appState = getAppState();
-      appState.lastWarmupDate = new Date().toISOString();
+      const nowIso = new Date().toISOString();
+      appState.lastWarmupDate = nowIso;
+      appState.warmupState = {
+        date: todayStr,
+        currentIndex: items.length,
+        completed: true,
+        itemIds: items.map(it => it.kind === 'flashcard' ? it.card.id : it.entry.itemId),
+        completedAt: nowIso,
+      };
       saveAppState(appState);
       setDoneToday(true);
     } else {
-      setIndex(i => i + 1);
+      const nextIdx = index + 1;
+      setIndex(nextIdx);
       setFlipped(false);
       setRevealed(false);
       setReAnswer('');
+
+      // Persist in-progress warmup index to localStorage so closing/refreshing preserves step
+      appState.warmupState = {
+        date: todayStr,
+        currentIndex: nextIdx,
+        completed: false,
+        itemIds: items.map(it => it.kind === 'flashcard' ? it.card.id : it.entry.itemId),
+      };
+      saveAppState(appState);
     }
   }
 

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { addMistake } from '@/lib/storage';
+import { useState, useCallback, useEffect } from 'react';
+import { addMistake, saveClozeCompletion, getAppState } from '@/lib/storage';
 import { clozeExercises } from '@/data/cloze';
 import { KatexRenderer } from '@/components/ui/KatexRenderer';
 import { FlagButton } from '@/components/ui/FlagButton';
@@ -162,7 +162,9 @@ function FillBlankExercise({ exercise }: { exercise: ClozeExercise }) {
     setSubmitted(true);
     const allCorrect = res.every(Boolean);
 
-    if (!allCorrect) {
+    if (allCorrect) {
+      saveClozeCompletion(exercise.id);
+    } else {
       const newAttempts = wrongAttempts + 1;
       setWrongAttempts(newAttempts);
       addMistake({

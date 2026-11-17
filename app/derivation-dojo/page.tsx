@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -19,7 +19,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { derivations } from '@/data/derivations';
-import { addNoteSheetEntry } from '@/lib/storage';
+import { addNoteSheetEntry, saveProofMastery, getAppState } from '@/lib/storage';
 import { generateId, cn } from '@/lib/utils';
 import { KatexRenderer } from '@/components/ui/KatexRenderer';
 import type { DerivationProof, ProofStep } from '@/types';
@@ -112,13 +112,25 @@ function StepOrderingMode({ proof }: { proof: DerivationProof }) {
     setChecked(false);
   }
 
+  useEffect(() => {
+    const s = getAppState();
+    if (s.proofProgress?.masteredIds?.includes(proof.id)) {
+      setMastered(true);
+      setItems([...proof.steps]);
+      setStatuses(proof.steps.map(() => 'correct'));
+    }
+  }, [proof.id, proof.steps]);
+
   function checkOrder() {
     const newStatuses = items.map((step, idx) =>
       step.id === proof.steps[idx].id ? 'correct' : 'wrong'
     );
     setStatuses(newStatuses as ('correct' | 'wrong')[]);
     setChecked(true);
-    if (newStatuses.every(s => s === 'correct')) setMastered(true);
+    if (newStatuses.every(s => s === 'correct')) {
+      setMastered(true);
+      saveProofMastery(proof.id);
+    }
   }
 
   function revealOrder() {
@@ -126,6 +138,7 @@ function StepOrderingMode({ proof }: { proof: DerivationProof }) {
     setStatuses(proof.steps.map(() => 'correct'));
     setChecked(true);
     setMastered(true);
+    saveProofMastery(proof.id);
   }
 
   return (

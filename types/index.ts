@@ -185,4 +185,21 @@ export interface AppState {
   moduleProgress: Record<string, number>;
   examSessions: ExamSimSession[];
   lastWarmupDate?: string;
+  warmupState?: {
+    date: string; // YYYY-MM-DD
+    currentIndex: number;
+    completed: boolean;
+    itemIds: string[];
+    completedAt?: string;
+  };
+  scenariosProgress?: {
+    masteredIds: string[];
+    history: Record<string, { correct: boolean; timestamp: string }>;
+  };
+  clozeProgress?: {
+    completedIds: string[];
+  };
+  proofProgress?: {
+    masteredIds: string[];
+  };
 }

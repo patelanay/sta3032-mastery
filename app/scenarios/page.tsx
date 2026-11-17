@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { scenarios } from '@/data/scenarios';
-import { getAppState, addMistake } from '@/lib/storage';
+import { getAppState, addMistake, saveScenarioResult } from '@/lib/storage';
 import { generateId, cn } from '@/lib/utils';
 import { KatexRenderer } from '@/components/ui/KatexRenderer';
 import { FlagButton } from '@/components/ui/FlagButton';
@@ -60,10 +60,19 @@ export default function ScenariosPage() {
     setSubmitted(false);
   }, [moduleFilter]);
 
+  useEffect(() => {
+    const s = getAppState();
+    if (s.scenariosProgress?.masteredIds) {
+      setMasteredIds(new Set(s.scenariosProgress.masteredIds));
+    }
+  }, []);
+
   const handleSubmit = () => {
     if (!selected || !scenario) return;
     setSubmitted(true);
     const isCorrect = selected === scenario.correctTest;
+
+    saveScenarioResult(scenario.id, isCorrect);
 
     setSessionStats((prev) => {
       const mod = scenario.module;

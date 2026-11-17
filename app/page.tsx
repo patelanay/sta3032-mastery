@@ -135,12 +135,14 @@ export default function HomePage() {
     setModuleProgress(formatted);
 
     // Check if daily warmup completed today
-    if (state.lastWarmupDate) {
-      const now = new Date();
-      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-      if (state.lastWarmupDate.split('T')[0] === todayStr) {
-        setWarmupDoneToday(true);
-      }
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const wasWarmupDone =
+      (state.warmupState?.date === todayStr && state.warmupState?.completed) ||
+      (state.lastWarmupDate && state.lastWarmupDate.split('T')[0] === todayStr);
+
+    if (wasWarmupDone) {
+      setWarmupDoneToday(true);
     }
   }, []);
 

@@ -11,6 +11,10 @@ function defaultState(): AppState {
     moduleProgress: {},
     examSessions: [],
     lastWarmupDate: undefined,
+    warmupState: undefined,
+    scenariosProgress: { masteredIds: [], history: {} },
+    clozeProgress: { completedIds: [] },
+    proofProgress: { masteredIds: [] },
   };
 }
 
@@ -25,13 +29,40 @@ export function getAppState(): AppState {
   }
 }
 
+// Custom event to sync state across tabs and trigger real-time updates
+const STATE_CHANGE_EVENT = 'sta3032_state_changed';
+
 export function saveAppState(s: AppState): void {
   try {
     if (typeof window === 'undefined') return;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    window.dispatchEvent(new CustomEvent(STATE_CHANGE_EVENT, { detail: s }));
   } catch {
     // ignore write errors (private mode / quota exceeded)
   }
+}
+
+export function subscribeToAppState(callback: (state: AppState) => void): () => void {
+  if (typeof window === 'undefined') return () => {};
+  const handler = (event: Event) => {
+    const custom = event as CustomEvent<AppState>;
+    if (custom.detail) {
+      callback(custom.detail);
+    } else {
+      callback(getAppState());
+    }
+  };
+  const storageHandler = (event: StorageEvent) => {
+    if (event.key === STORAGE_KEY) {
+      callback(getAppState());
+    }
+  };
+  window.addEventListener(STATE_CHANGE_EVENT, handler);
+  window.addEventListener('storage', storageHandler);
+  return () => {
+    window.removeEventListener(STATE_CHANGE_EVENT, handler);
+    window.removeEventListener('storage', storageHandler);
+  };
 }
 
 export function addNoteSheetEntry(e: NoteSheetEntry): void {
@@ -80,6 +111,51 @@ export function updateFlashcardProgress(
       ...data,
     };
     saveAppState(state);
+  } catch {
+    // noop
+  }
+}
+
+export function saveScenarioResult(id: string, isCorrect: boolean): void {
+  try {
+    const state = getAppState();
+    if (!state.scenariosProgress) {
+      state.scenariosProgress = { masteredIds: [], history: {} };
+    }
+    state.scenariosProgress.history[id] = {
+      correct: isCorrect,
+      timestamp: new Date().toISOString(),
+    };
+    if (isCorrect && !state.scenariosProgress.masteredIds.includes(id)) {
+      state.scenariosProgress.masteredIds.push(id);
+    }
+    saveAppState(state);
+  } catch {
+    // noop
+  }
+}
+
+export function saveProofMastery(id: string): void {
+  try {
+    const state = getAppState();
+    if (!state.proofProgress) state.proofProgress = { masteredIds: [] };
+    if (!state.proofProgress.masteredIds.includes(id)) {
+      state.proofProgress.masteredIds.push(id);
+      saveAppState(state);
+    }
+  } catch {
+    // noop
+  }
+}
+
+export function saveClozeCompletion(id: string): void {
+  try {
+    const state = getAppState();
+    if (!state.clozeProgress) state.clozeProgress = { completedIds: [] };
+    if (!state.clozeProgress.completedIds.includes(id)) {
+      state.clozeProgress.completedIds.push(id);
+      saveAppState(state);
+    }
   } catch {
     // noop
   }
