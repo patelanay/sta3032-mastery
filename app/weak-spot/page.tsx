@@ -29,6 +29,26 @@ const ERROR_LABEL: Record<ErrorType, string> = {
   'other': 'Other',
 };
 
+// Returns date string in YYYY-MM-DD for local date comparison (midnight reset)
+function getTodayDateString(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// Calculate time remaining until next 12:00 AM midnight
+function getTimeUntilMidnight(): { hours: number; minutes: number; seconds: number } {
+  const now = new Date();
+  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+  const diff = Math.max(0, midnight.getTime() - now.getTime());
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+  return { hours, minutes, seconds };
+}
+
 function buildWarmupItems(state: AppState): WarmupItem[] {
   // Top mistake items (highest repeat count)
   const mistakeCounts: Record<string, number> = {};
@@ -63,21 +83,36 @@ function WarmupTab() {
   const [flipped, setFlipped] = useState(false);
   const [reAnswer, setReAnswer] = useState('');
   const [revealed, setRevealed] = useState(false);
-  const [done, setDone] = useState(false);
+  const [doneToday, setDoneToday] = useState(false);
   const [startTime] = useState(Date.now());
   const [elapsed, setElapsed] = useState(0);
+  const [countdown, setCountdown] = useState(getTimeUntilMidnight());
 
   useEffect(() => {
     const s = getAppState();
     setState(s);
     setItems(buildWarmupItems(s));
+
+    // Check if user already finished warmup today (since last midnight)
+    const todayStr = getTodayDateString();
+    if (s.lastWarmupDate) {
+      const lastDate = s.lastWarmupDate.split('T')[0];
+      if (lastDate === todayStr) {
+        setDoneToday(true);
+      }
+    }
   }, []);
 
+  // Countdown timer for session and midnight reset
   useEffect(() => {
-    if (done) return;
-    const id = setInterval(() => setElapsed(Math.floor((Date.now() - startTime) / 1000)), 1000);
+    const id = setInterval(() => {
+      if (!doneToday) {
+        setElapsed(Math.floor((Date.now() - startTime) / 1000));
+      }
+      setCountdown(getTimeUntilMidnight());
+    }, 1000);
     return () => clearInterval(id);
-  }, [done, startTime]);
+  }, [doneToday, startTime]);
 
   const remaining = Math.max(0, 15 * 60 - elapsed);
   const remMin = Math.floor(remaining / 60);
@@ -88,7 +123,7 @@ function WarmupTab() {
       const appState = getAppState();
       appState.lastWarmupDate = new Date().toISOString();
       saveAppState(appState);
-      setDone(true);
+      setDoneToday(true);
     } else {
       setIndex(i => i + 1);
       setFlipped(false);
@@ -97,23 +132,52 @@ function WarmupTab() {
     }
   }
 
-  if (!state || items.length === 0) {
+  // ALREADY COMPLETED TODAY — LOCKED OUT UNTIL MIDNIGHT RESET
+  if (doneToday) {
     return (
-      <div className="text-center py-16 text-gray-400 space-y-3">
-        <p className="text-5xl">🎯</p>
-        <p className="text-lg font-semibold text-gray-300">No weak spots yet!</p>
-        <p>Use the app to build your mistake journal and flashcard history.</p>
+      <div className="max-w-xl mx-auto py-12 px-6 bg-gray-900 border border-gray-800 rounded-3xl text-center space-y-6 shadow-2xl">
+        <div className="w-16 h-16 mx-auto rounded-full bg-emerald-950/80 border border-emerald-500/50 flex items-center justify-center text-3xl">
+          ✓
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold text-white">Daily Warmup Completed for Today</h2>
+          <p className="text-sm text-gray-400">
+            You have already finished today&apos;s 15-minute warmup. To prevent cramming fatigue and maximize spaced retrieval, your next queue resets at <span className="text-indigo-400 font-semibold">12:00 AM midnight</span>.
+          </p>
+        </div>
+
+        {/* Midnight Reset Countdown */}
+        <div className="p-4 bg-gray-950 border border-gray-800 rounded-2xl space-y-2">
+          <p className="text-xs uppercase tracking-widest font-bold text-gray-500">Resets In</p>
+          <div className="flex justify-center items-center gap-3 font-mono text-2xl font-bold text-indigo-400">
+            <span>{String(countdown.hours).padStart(2, '0')}h</span>
+            <span className="text-gray-600">:</span>
+            <span>{String(countdown.minutes).padStart(2, '0')}m</span>
+            <span className="text-gray-600">:</span>
+            <span>{String(countdown.seconds).padStart(2, '0')}s</span>
+          </div>
+          <p className="text-[11px] text-gray-500">
+            Next queue will re-pull your top 5 repeat weak spots at midnight.
+          </p>
+        </div>
+
+        <div className="pt-2 text-xs text-gray-500">
+          Want to continue practicing? Head over to the{' '}
+          <a href="/scenarios" className="text-indigo-400 hover:underline">Scenario Recognition Trainer</a> or{' '}
+          <a href="/module-explorer" className="text-indigo-400 hover:underline">Module Explorer</a>.
+        </div>
       </div>
     );
   }
 
-  if (done) {
+  if (!state || items.length === 0) {
     return (
-      <div className="text-center py-16 space-y-4">
-        <p className="text-6xl">🎯</p>
-        <h2 className="text-2xl font-bold text-emerald-400">Warmup Complete!</h2>
-        <p className="text-gray-300">You reviewed your top {items.length} weak spots.</p>
-        <p className="text-sm text-gray-500">Last warmup recorded: {new Date().toLocaleString()}</p>
+      <div className="text-center py-16 text-gray-400 space-y-3">
+        <p className="text-5xl">🎯</p>
+        <p className="text-lg font-semibold text-gray-300">No weak spots logged yet!</p>
+        <p className="text-sm text-gray-500">
+          As you practice in the Scenario Trainer or take Flashcard drills, any misses will be queued here for your daily 15-minute warmup.
+        </p>
       </div>
     );
   }
@@ -268,45 +332,45 @@ function MistakeJournalTab() {
     moduleCounts[m.module] = (moduleCounts[m.module] ?? 0) + 1;
   });
   const topError = Object.entries(errorCounts).sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0))[0];
-  const topModule = Object.entries(moduleCounts).sort((a, b) => b[1] - a[1])[0];
 
   function handleClearAll() {
     const s = getAppState();
     s.mistakes = [];
     saveAppState(s);
-    refresh();
     setConfirmClear(false);
+    refresh();
   }
-
-  if (!state) return <div className="text-gray-500 py-8 text-center">Loading...</div>;
 
   return (
     <div className="space-y-6">
-      {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-4">
-          <p className="text-2xl font-bold text-white">{totalMistakes}</p>
-          <p className="text-xs text-gray-400 mt-0.5">Total mistakes</p>
+      {/* Stats row */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-gray-800/40 border border-gray-700 rounded-xl p-4">
+          <p className="text-xs text-gray-500 uppercase tracking-wide">Total Logged Mistakes</p>
+          <p className="text-2xl font-bold text-white mt-1">{totalMistakes}</p>
         </div>
-        <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-4">
-          <p className="text-sm font-semibold text-orange-400 truncate">
-            {topError ? ERROR_LABEL[topError[0] as ErrorType] : '—'}
+        <div className="bg-gray-800/40 border border-gray-700 rounded-xl p-4">
+          <p className="text-xs text-gray-500 uppercase tracking-wide">Top Point Leak</p>
+          <p className="text-lg font-bold text-rose-400 mt-1">
+            {topError ? `${ERROR_LABEL[topError[0] as ErrorType]} (${topError[1]})` : 'None yet'}
           </p>
-          <p className="text-xs text-gray-400 mt-0.5">Most common error</p>
         </div>
-        <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-4">
-          <p className="text-2xl font-bold text-rose-400">
-            {topModule ? `Mod ${topModule[0]}` : '—'}
+        <div className="bg-gray-800/40 border border-gray-700 rounded-xl p-4">
+          <p className="text-xs text-gray-500 uppercase tracking-wide">Highest-Miss Module</p>
+          <p className="text-lg font-bold text-yellow-400 mt-1">
+            {Object.keys(moduleCounts).length > 0
+              ? `Module ${Object.entries(moduleCounts).sort((a, b) => b[1] - a[1])[0][0]}`
+              : 'None yet'}
           </p>
-          <p className="text-xs text-gray-400 mt-0.5">Highest-miss module</p>
         </div>
       </div>
 
-      {/* Filters row */}
-      <div className="flex flex-wrap gap-3 items-center">
+      {/* Filter bar */}
+      <div className="flex flex-wrap items-center gap-3">
         <select
           value={filterError}
           onChange={e => setFilterError(e.target.value as ErrorType | 'all')}
+          aria-label="Filter by error type"
           className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-indigo-500"
         >
           <option value="all">All Error Types</option>
@@ -316,17 +380,23 @@ function MistakeJournalTab() {
           <option value="misread-output">Misread Output</option>
           <option value="other">Other</option>
         </select>
+
         <select
           value={filterModule}
           onChange={e => setFilterModule(e.target.value)}
+          aria-label="Filter by module"
           className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-indigo-500"
         >
           <option value="all">All Modules</option>
-          {[1,2,3,4,5,6].map(m => <option key={m} value={String(m)}>Module {m}</option>)}
+          {[1, 2, 3, 4, 5, 6].map(m => (
+            <option key={m} value={String(m)}>Module {m}</option>
+          ))}
         </select>
+
         <select
           value={filterSource}
           onChange={e => setFilterSource(e.target.value)}
+          aria-label="Filter by source"
           className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-indigo-500"
         >
           <option value="all">All Sources</option>
@@ -360,18 +430,18 @@ function MistakeJournalTab() {
           No mistakes match your filters. Keep studying!
         </div>
       ) : (
-        <div className="rounded-xl border border-gray-700 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-800/80">
+        <div className="bg-gray-800/40 border border-gray-700 rounded-xl overflow-hidden">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-gray-800 text-gray-400 text-xs uppercase tracking-wider">
               <tr>
-                <th className="text-left px-4 py-3 text-gray-400 font-medium">Date</th>
-                <th className="text-left px-4 py-3 text-gray-400 font-medium">Source</th>
-                <th className="text-left px-4 py-3 text-gray-400 font-medium">Topic</th>
-                <th className="text-left px-4 py-3 text-gray-400 font-medium">Module</th>
-                <th className="text-left px-4 py-3 text-gray-400 font-medium">Error Type</th>
+                <th className="px-4 py-3">Date</th>
+                <th className="px-4 py-3">Source</th>
+                <th className="px-4 py-3">Topic / Item</th>
+                <th className="px-4 py-3">Module</th>
+                <th className="px-4 py-3">Error Type</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-800">
+            <tbody className="divide-y divide-gray-700">
               {filtered.map(m => (
                 <>
                   <tr

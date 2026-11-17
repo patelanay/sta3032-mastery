@@ -118,6 +118,7 @@ const FEATURES = [
 export default function HomePage() {
   const { days, hours, minutes, seconds } = useCountdown();
   const [moduleProgress, setModuleProgress] = useState<Record<number, ModuleProgress>>({});
+  const [warmupDoneToday, setWarmupDoneToday] = useState(false);
 
   useEffect(() => {
     const state = getAppState();
@@ -132,6 +133,15 @@ export default function HomePage() {
       };
     }
     setModuleProgress(formatted);
+
+    // Check if daily warmup completed today
+    if (state.lastWarmupDate) {
+      const now = new Date();
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      if (state.lastWarmupDate.split('T')[0] === todayStr) {
+        setWarmupDoneToday(true);
+      }
+    }
   }, []);
 
   const days2 = daysUntilExam();
@@ -180,12 +190,20 @@ export default function HomePage() {
 
         {/* CTA */}
         <div className="pt-2">
-          <Link
-            href="/weak-spot?warmup=true"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-xl transition-colors shadow-lg shadow-primary-900/40 text-base"
-          >
-            🔥 Start Daily Warmup
-          </Link>
+          {warmupDoneToday ? (
+            <div className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-950/80 border border-emerald-600/60 text-emerald-300 font-semibold rounded-xl text-sm">
+              <span>✓ Today&apos;s Warmup Done</span>
+              <span className="text-emerald-500">•</span>
+              <span className="text-gray-400 text-xs">Resets at 12:00 AM</span>
+            </div>
+          ) : (
+            <Link
+              href="/weak-spot?warmup=true"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-xl transition-colors shadow-lg shadow-primary-900/40 text-base"
+            >
+              🔥 Start Daily Warmup (15 min)
+            </Link>
+          )}
         </div>
       </section>
 
