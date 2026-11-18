@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getAppState } from '@/lib/storage';
+import { getAppState, setLearningMode } from '@/lib/storage';
 import { moduleDefinitions } from '@/data/modules';
 import { ModuleBadge } from '@/components/ui/Badge';
+import { CourseRoadmap } from '@/components/modules/CourseRoadmap';
 import { cn } from '@/lib/utils';
 
 const WEIGHT_STYLES: Record<string, { label: string; className: string }> = {
@@ -23,123 +24,209 @@ const MODULE_TOOLS_SUMMARY: Record<number, { tools: string[]; milestone?: string
   6: { tools: ['ANOVA Table Completion', 'Tukey Post-Hoc Pairwise', 'RCBD Blocking Drills'], milestone: 'Practice Final 3 Milestone' },
 };
 
+type ViewMode = 'progressive-roadmap' | 'freestyle-grid';
+
 export default function ModuleExplorerPage() {
   const [moduleProgress, setModuleProgress] = useState<Record<string, number>>({});
+  const [viewMode, setViewMode] = useState<ViewMode>('progressive-roadmap');
 
   useEffect(() => {
     const state = getAppState();
     setModuleProgress(state.moduleProgress ?? {});
+    if (state.learningMode === 'freestyle') {
+      setViewMode('freestyle-grid');
+    } else {
+      setViewMode('progressive-roadmap');
+    }
   }, []);
+
+  const handleModeSwitch = (mode: ViewMode) => {
+    setViewMode(mode);
+    setLearningMode(mode === 'progressive-roadmap' ? 'progressive' : 'freestyle');
+  };
 
   return (
     <main className="min-h-screen bg-gray-950 text-gray-100 p-6 max-w-6xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* Header & Mode Switcher */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-800 pb-6">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">📚 Guided Learning Pathway</h1>
-          <p className="text-gray-400 text-sm max-w-2xl">
-            You don't need to guess which tool to use. Every module integrates its specific{' '}
-            <span className="text-indigo-400 font-semibold">decision rules</span>,{' '}
-            <span className="text-emerald-400 font-semibold">scenario drills</span>,{' '}
-            <span className="text-amber-400 font-semibold">step-by-step walkthroughs</span>, and{' '}
-            <span className="text-purple-400 font-semibold">timed exam milestones</span> right where they belong.
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-900 text-indigo-300 border border-indigo-700">
+              STA3032 Course Pathway
+            </span>
+            <span className="text-xs text-gray-400">Final Exam: Dec 8, 2026</span>
+          </div>
+          <h1 className="text-3xl font-black text-white">
+            Curriculum &amp; Roadmap
+          </h1>
+          <p className="text-gray-400 text-xs md:text-sm mt-1 max-w-2xl">
+            Choose your learning style: follow the structured <strong>Progressive Roadmap</strong> step-by-step, or switch to <strong>Freestyle Mode</strong> to open all modules and tools immediately.
           </p>
         </div>
-        <Link
-          href="/weak-spot?warmup=true"
-          className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-colors shadow-sm self-start md:self-auto flex items-center gap-1.5 whitespace-nowrap"
-        >
-          <span>🔥 Start Daily Warmup</span>
-        </Link>
+
+        {/* View Toggle Controls */}
+        <div className="flex items-center gap-2 p-1.5 bg-gray-900 border border-gray-800 rounded-2xl self-start md:self-auto shrink-0 shadow-lg">
+          <button
+            type="button"
+            onClick={() => handleModeSwitch('progressive-roadmap')}
+            className={cn(
+              'px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2',
+              viewMode === 'progressive-roadmap'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                : 'text-gray-400 hover:text-gray-200'
+            )}
+          >
+            <span>🗺️ Progressive Roadmap</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleModeSwitch('freestyle-grid')}
+            className={cn(
+              'px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2',
+              viewMode === 'freestyle-grid'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                : 'text-gray-400 hover:text-gray-200'
+            )}
+          >
+            <span>🔓 Freestyle All Access</span>
+          </button>
+        </div>
       </div>
 
-      {/* Modules Roadmap Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {moduleDefinitions.map((mod) => {
-          const weight = WEIGHT_STYLES[mod.examWeight] ?? WEIGHT_STYLES.Low;
-          const topicsTotal = mod.topics?.length ?? 0;
-          const doneKey = `mod${mod.number}`;
-          const done = moduleProgress[doneKey] ?? 0;
-          const pct = topicsTotal > 0 ? Math.round((done / topicsTotal) * 100) : 0;
-          const toolInfo = MODULE_TOOLS_SUMMARY[mod.number];
-
-          return (
-            <Link
-              key={mod.number}
-              href={`/module-explorer/${mod.number}`}
-              className="group block rounded-2xl border border-gray-800 bg-gray-900 hover:border-indigo-500 hover:bg-gray-800/80 transition-all duration-200 overflow-hidden flex flex-col justify-between shadow-lg"
-            >
+      {/* VIEW 1: PROGRESSIVE ROADMAP */}
+      {viewMode === 'progressive-roadmap' && (
+        <div className="space-y-6 animate-fade-in">
+          <div className="p-4 bg-indigo-950/30 border border-indigo-800/60 rounded-2xl flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🎯</span>
               <div>
-                {/* Accent Top Border */}
-                <div
-                  className="h-2"
-                  style={{ background: mod.color ?? '#6366f1' }}
-                />
+                <p className="text-sm font-bold text-white">Guided Sequential Progression Active</p>
+                <p className="text-xs text-indigo-300">
+                  Each step guides you from concept intuition → drill practice → active recall capstone → timed exam milestone.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => handleModeSwitch('freestyle-grid')}
+              className="text-xs text-gray-400 hover:text-indigo-300 underline"
+            >
+              Switch to Freestyle (Unlock everything)
+            </button>
+          </div>
 
-                <div className="p-5 space-y-4">
-                  {/* Badges row */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <ModuleBadge module={mod.number} />
-                    <span
-                      className={cn(
-                        'text-xs font-bold px-2 py-0.5 rounded-full',
-                        weight.className,
-                      )}
-                    >
-                      {weight.label}
-                    </span>
-                    {toolInfo?.milestone && (
-                      <span className="text-xs bg-indigo-950 text-indigo-300 border border-indigo-700 px-2 py-0.5 rounded-full font-medium">
-                        ⏱️ Exam Milestone
-                      </span>
-                    )}
-                  </div>
+          <CourseRoadmap isProgressive={true} />
+        </div>
+      )}
 
-                  {/* Title & Lectures */}
+      {/* VIEW 2: FREESTYLE ALL ACCESS (THE WAY IT WAS) */}
+      {viewMode === 'freestyle-grid' && (
+        <div className="space-y-6 animate-fade-in">
+          <div className="p-4 bg-emerald-950/30 border border-emerald-800/60 rounded-2xl flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🔓</span>
+              <div>
+                <p className="text-sm font-bold text-white">Freestyle All Access Active</p>
+                <p className="text-xs text-emerald-300">
+                  No locks or restrictions. Browse and jump into any of the 6 modules, walkthroughs, or exams whenever you want.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => handleModeSwitch('progressive-roadmap')}
+              className="text-xs text-gray-400 hover:text-emerald-300 underline"
+            >
+              Switch to Progressive Roadmap
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {moduleDefinitions.map((mod) => {
+              const weight = WEIGHT_STYLES[mod.examWeight] ?? WEIGHT_STYLES.Low;
+              const topicsTotal = mod.topics?.length ?? 0;
+              const doneKey = `mod${mod.number}`;
+              const done = moduleProgress[doneKey] ?? 0;
+              const pct = topicsTotal > 0 ? Math.round((done / topicsTotal) * 100) : 0;
+              const toolInfo = MODULE_TOOLS_SUMMARY[mod.number];
+
+              return (
+                <Link
+                  key={mod.number}
+                  href={`/module-explorer/${mod.number}`}
+                  className="group block rounded-2xl border border-gray-800 bg-gray-900 hover:border-indigo-500 hover:bg-gray-800/80 transition-all duration-200 overflow-hidden flex flex-col justify-between shadow-lg"
+                >
                   <div>
-                    <h2 className="text-lg font-bold text-white group-hover:text-indigo-300 transition-colors leading-snug">
-                      Module {mod.number}: {mod.title}
-                    </h2>
-                    <p className="text-xs text-gray-400 mt-0.5">Lectures {mod.lectures}</p>
-                  </div>
-
-                  {/* Integrated Tools in this module */}
-                  <div className="bg-gray-950/70 border border-gray-800/80 rounded-xl p-3 space-y-1.5">
-                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Integrated Drills</p>
-                    <ul className="space-y-1">
-                      {toolInfo?.tools.map((t, i) => (
-                        <li key={i} className="text-xs text-gray-300 flex items-center gap-1.5 truncate">
-                          <span className="text-indigo-400 text-xs">→</span>
-                          <span>{t}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              {/* Progress Footer */}
-              <div className="p-5 pt-0">
-                <div className="space-y-1.5 border-t border-gray-800/80 pt-3">
-                  <div className="flex justify-between text-xs text-gray-400">
-                    <span>{done}/{topicsTotal} topics mastered</span>
-                    <span className="font-semibold text-white">{pct}%</span>
-                  </div>
-                  <div className="w-full h-1.5 rounded-full bg-gray-800 overflow-hidden">
+                    {/* Accent Top Border */}
                     <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${pct}%`,
-                        background: mod.color ?? '#6366f1',
-                      }}
+                      className="h-2"
+                      style={{ background: mod.color ?? '#6366f1' }}
                     />
+
+                    <div className="p-5 space-y-4">
+                      {/* Badges row */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <ModuleBadge module={mod.number} />
+                        <span
+                          className={cn(
+                            'text-xs font-bold px-2 py-0.5 rounded-full',
+                            weight.className,
+                          )}
+                        >
+                          {weight.label}
+                        </span>
+                        {toolInfo?.milestone && (
+                          <span className="text-xs bg-indigo-950 text-indigo-300 border border-indigo-700 px-2 py-0.5 rounded-full font-medium">
+                            ⏱️ Exam Milestone
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Title & Lectures */}
+                      <div>
+                        <h2 className="text-lg font-bold text-white group-hover:text-indigo-300 transition-colors leading-snug">
+                          Module {mod.number}: {mod.title}
+                        </h2>
+                        <p className="text-xs text-gray-400 mt-1">Lectures {mod.lectures}</p>
+                      </div>
+
+                      {/* Key Tools Integrated */}
+                      <div className="space-y-1.5 pt-1">
+                        <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                          Key Decision Focus:
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {toolInfo?.tools.map((t, idx) => (
+                            <span
+                              key={idx}
+                              className="text-[11px] px-2 py-0.5 rounded bg-gray-800 text-gray-300 border border-gray-700/60 font-medium"
+                            >
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Milestone badge */}
+                      {toolInfo?.milestone && (
+                        <div className="text-xs font-bold text-indigo-400 bg-indigo-950/40 border border-indigo-800/40 rounded-lg px-2.5 py-1.5">
+                          🎯 {toolInfo.milestone}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
+
+                  {/* Progress Footer */}
+                  <div className="px-5 py-3.5 border-t border-gray-800 bg-gray-950/60 flex items-center justify-between text-xs text-gray-400">
+                    <span>
+                      {done} / {topicsTotal} topics mastered
+                    </span>
+                    <span className="font-mono font-semibold text-indigo-400">{pct}%</span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </main>
   );
 }

@@ -185,6 +185,7 @@ export interface AppState {
   moduleProgress: Record<string, number>;
   examSessions: ExamSimSession[];
   lastWarmupDate?: string;
+  learningMode?: 'progressive' | 'freestyle';
   warmupState?: {
     date: string; // YYYY-MM-DD
     currentIndex: number;

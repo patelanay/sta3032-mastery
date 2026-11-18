@@ -11,6 +11,7 @@ function defaultState(): AppState {
     moduleProgress: {},
     examSessions: [],
     lastWarmupDate: undefined,
+    learningMode: 'progressive',
     warmupState: undefined,
     scenariosProgress: { masteredIds: [], history: {} },
     clozeProgress: { completedIds: [] },
@@ -156,6 +157,16 @@ export function saveClozeCompletion(id: string): void {
       state.clozeProgress.completedIds.push(id);
       saveAppState(state);
     }
+  } catch {
+    // noop
+  }
+}
+
+export function setLearningMode(mode: 'progressive' | 'freestyle'): void {
+  try {
+    const state = getAppState();
+    state.learningMode = mode;
+    saveAppState(state);
   } catch {
     // noop
   }

@@ -8,7 +8,7 @@ import { daysUntilExam } from '@/lib/utils';
 
 const NAV_LINKS = [
   { href: '/', label: 'Home' },
-  { href: '/module-explorer', label: 'Modules' },
+  { href: '/module-explorer', label: 'Roadmap & Modules' },
   { href: '/scenarios', label: 'Scenarios' },
   { href: '/walkthroughs', label: 'Walkthroughs' },
   { href: '/cloze', label: 'Cloze' },
